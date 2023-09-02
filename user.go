@@ -1,5 +1,6 @@
-package avito_dynamic_segment_back
+package app
 
 type User struct {
-	Id int
+	Id   int    `json:"-"`
+	Name string `json:"name" binding:"required"`
 }

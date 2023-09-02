@@ -5,44 +5,62 @@ import (
 	"avito-dynamic-segment-back/pkg/handler"
 	"avito-dynamic-segment-back/pkg/repository"
 	"avito-dynamic-segment-back/pkg/service"
-	"github.com/joho/godotenv"
+	"context"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"log"
 	"os"
+	"os/signal"
+	"syscall"
 )
 
+// @title Avito Dynamic Segment App API
+// @version 1.0
+// @description API Server for Avito Dynamic Segment Application
+
+// @host localhost:8001
+// @BasePath /
 func main() {
+	logrus.SetFormatter(new(logrus.JSONFormatter))
+
 	if err := initConfig(); err != nil {
-		log.Fatalf("error initializing configs: %s", err.Error())
+		logrus.Fatalf("error initializing configs: %s", err.Error())
 	}
-
-	password := ""
-	if err := godotenv.Load(); err != nil {
-		password = "password"
-		log.Fatalf("error not have .env file or password parameter there: %s", err.Error())
-	} else {
-		password = os.Getenv("DB_PASSWORD")
-	}
-
 	db, err := repository.NewPostgresDB(repository.Config{
 		Host:     viper.GetString("db.host"),
 		Port:     viper.GetString("db.port"),
 		Username: viper.GetString("db.username"),
 		DBName:   viper.GetString("db.dbname"),
-		SSLMode:  viper.GetString("db.sslmode"),
-		Password: password,
+		Password: os.Getenv("POSTGRES_PASSWORD"),
 	})
 	if err != nil {
-		log.Fatalf("failed to initialize db: %s", err.Error())
+		logrus.Fatalf("failed to initialize db: %s", err.Error())
 	}
 
 	repositories := repository.NewRepository(db)
 	services := service.NewService(repositories)
 	handlers := handler.NewHandler(services)
 
-	server := new(app.Server)
-	if err := server.Run(viper.GetString("port"), handlers.InitRoutes()); err != nil {
-		log.Fatalf("error occured while running http server: %s", err.Error())
+	srv := new(app.Server)
+	go func() {
+		if err := srv.Run(viper.GetString("port"), handlers.InitRoutes()); err != nil {
+			logrus.Fatalf("error occured while running http server: %s", err.Error())
+		}
+	}()
+
+	logrus.Print("Avito segment app Started")
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
+	<-quit
+
+	logrus.Print("Avito segment app Shutting Down")
+
+	if err := srv.Shutdown(context.Background()); err != nil {
+		logrus.Errorf("error occured on server shutting down: %s", err.Error())
+	}
+
+	if err := db.Close(); err != nil {
+		logrus.Errorf("error occured on db connection close: %s", err.Error())
 	}
 }
 

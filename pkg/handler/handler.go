@@ -1,8 +1,11 @@
 package handler
 
 import (
+	_ "avito-dynamic-segment-back/docs"
 	"avito-dynamic-segment-back/pkg/service"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 type Handler struct {
@@ -16,25 +19,24 @@ func NewHandler(services *service.Service) *Handler {
 func (h *Handler) InitRoutes() *gin.Engine {
 	router := gin.New()
 
-	api := router.Group("/api")
-	{
-		users := api.Group("/users")
-		{
-			users.POST("/", h.createUser)
-			users.GET("/", h.getAllUsers)
-			users.GET("/:id", h.getUserById)
-			users.PUT("/:id", h.updateUser)
-			users.DELETE("/:id", h.deleteUser)
-		}
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-		segments := users.Group(":id/segments")
-		{
-			segments.POST("/", h.createSegment)
-			segments.GET("/", h.getAllSegments)
-			segments.GET("/:segment_id", h.getSegmentById)
-			segments.PUT("/:segment_id", h.updateSegment)
-			segments.DELETE("/:segment_id", h.deleteSegment)
-		}
+	users := router.Group("/users")
+	{
+		users.POST("/", h.createUser)
+		users.GET("/", h.getAllUsers)
+		users.GET("/:id", h.getUserById)
+		users.PUT("/:id", h.updateUser)
+		users.DELETE("/:id", h.deleteUser)
+	}
+
+	segments := router.Group("/segments")
+	{
+		segments.POST("/", h.createSegment)
+		segments.GET("/", h.getAllSegments)
+		segments.GET("/:id", h.getSegmentById)
+		segments.PUT("/:id", h.updateSegment)
+		segments.DELETE("/:id", h.deleteSegment)
 	}
 
 	return router

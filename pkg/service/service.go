@@ -1,18 +1,24 @@
 package service
 
-import "avito-dynamic-segment-back/pkg/repository"
+import (
+	app "avito-dynamic-segment-back"
+	"avito-dynamic-segment-back/pkg/repository"
+)
 
-type AppUser interface {
+type User interface {
+	CreateUser(user app.User) (int, error)
 }
 
-type AppSegment interface {
+type Segment interface {
 }
 
 type Service struct {
-	AppUser
-	AppSegment
+	User
+	Segment
 }
 
 func NewService(repositories *repository.Repository) *Service {
-	return &Service{}
+	return &Service{
+		User: NewUserService(repositories.User),
+	}
 }

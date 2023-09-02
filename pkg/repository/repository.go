@@ -1,18 +1,24 @@
 package repository
 
-import "github.com/jmoiron/sqlx"
+import (
+	app "avito-dynamic-segment-back"
+	"github.com/jmoiron/sqlx"
+)
 
-type AppUser interface {
+type User interface {
+	CreateUser(user app.User) (int, error)
 }
 
-type AppSegment interface {
+type Segment interface {
 }
 
 type Repository struct {
-	AppUser
-	AppSegment
+	User
+	Segment
 }
 
 func NewRepository(db *sqlx.DB) *Repository {
-	return &Repository{}
+	return &Repository{
+		User: NewUserPostgres(db),
+	}
 }

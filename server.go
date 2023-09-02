@@ -1,4 +1,4 @@
-package avito_dynamic_segment_back
+package app
 
 import (
 	"context"
